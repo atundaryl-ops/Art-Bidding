@@ -26,8 +26,12 @@ const io = new Server(server, {
   allowEIO3: true
 });
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+  crossOriginOpenerPolicy: false,
+}));
 app.use(cors({ origin: '*', credentials: false }));
+app.options('*', cors({ origin: '*' }));
 app.use(express.json({ limit: '10kb' }));
 
 // Rate limiting
