@@ -20,6 +20,7 @@ export function SocketProvider({ children }) {
     const token = localStorage.getItem('token');
     const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:4000', {
       auth: { token },
+      transports: ['polling'],
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,

@@ -20,7 +20,7 @@ export default function AuctionPage() {
   const { data: auction, isLoading } = useQuery({
     queryKey: ['active-auction'],
     queryFn: () => api.get('/auctions/active').then(r => r.data),
-    refetchInterval: 10000,
+    refetchInterval: 30000,
   });
 
   // Join auction room & listen for events

@@ -21,10 +21,18 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 // Socket.io
 const io = new Server(server, {
   cors: {
-    origin: CLIENT_URL,
+    origin: (origin, callback) => {
+      if (!origin || origin.endsWith('.vercel.app') || origin === 'http://localhost:3000') {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST'],
     credentials: true
-  }
+  },
+  transports: ['polling'],
+  allowEIO3: true
 });
 
 // Security middleware
@@ -48,7 +56,7 @@ app.use(express.json({ limit: '10kb' }));
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 min
-  max: 100,
+  max: 500,
   message: { error: 'Too many requests, please try again later' }
 });
 const authLimiter = rateLimit({
