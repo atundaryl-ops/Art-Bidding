@@ -29,7 +29,20 @@ const io = new Server(server, {
 
 // Security middleware
 app.use(helmet());
-app.use(cors({ origin: CLIENT_URL, credentials: true }));
+app.use(cors({
+  origin: (origin, callback) => {
+    const allowed = [
+      'https://art-bidding-xm4g.vercel.app',
+      'http://localhost:3000'
+    ];
+    if (!origin || allowed.includes(origin) || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
 app.use(express.json({ limit: '10kb' }));
 
 // Rate limiting
