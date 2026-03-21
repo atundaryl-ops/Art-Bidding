@@ -18,7 +18,7 @@ export function SocketProvider({ children }) {
     }
 
     const token = localStorage.getItem('token');
-    const socket = io('http://localhost:4000', {
+    const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:4000', {
       auth: { token },
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
