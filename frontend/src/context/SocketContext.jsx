@@ -20,13 +20,16 @@ export function SocketProvider({ children }) {
     const token = localStorage.getItem('token');
     const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:4000', {
       auth: { token },
-      reconnectionAttempts: 5,
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
     });
 
     socket.on('connect', () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
-    socketRef.current = socket;
+    socket.on('reconnect', () => setConnected(true));
+    socket.on('reconnect_attempt', () => setConnected(false));
 
     return () => {
       socket.disconnect();
