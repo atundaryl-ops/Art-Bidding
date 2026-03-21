@@ -4,11 +4,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ['"Playfair Display"', 'Georgia', 'serif'],
-        body: ['"DM Sans"', 'sans-serif'],
+        display: ['"BigStage"', 'Georgia', 'serif'],
+        body: ['"TTSquares"', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
       },
-
       colors: {
         auction: {
           gold: '#3A86FF',
@@ -45,3 +44,4 @@ export default {
   },
   plugins: []
 }
+

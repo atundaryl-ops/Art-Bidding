@@ -123,56 +123,56 @@ export default function AdminAuctions() {
       )}
 
       {/* Auctions list */}
-<div className="space-y-3">
-  {auctions.map(a => (
-    <div key={a.id}>
-      <div className="card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className={a.status === 'active' ? 'badge-active' : a.status === 'ended' ? 'badge-ended' : 'badge-pending'}>
-              {a.status}
-            </span>
-          </div>
-          <h3 className="font-semibold">{a.title}</h3>
-          <p className="text-xs text-auction-muted flex items-center gap-1 mt-0.5">
-            <Clock className="w-3 h-3" /> {a.duration_minutes} min
-            {a.ends_at && ` · Ends ${new Date(a.ends_at).toLocaleString()}`}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {a.status === 'pending' && (
-            <button onClick={() => startMutation.mutate(a.id)} disabled={startMutation.isPending}
-              className="btn-gold flex items-center gap-1.5 text-sm">
-              <Play className="w-3.5 h-3.5" /> Start
-            </button>
-          )}
-          {a.status === 'active' && (
-            <>
-              <button
-                onClick={() => { setSelectedId(selectedId === a.id ? null : a.id); setLiveBids([]); }}
-                className="btn-outline text-sm px-3 py-1.5">
-                {selectedId === a.id ? 'Hide Bids' : 'Live Bids'}
-              </button>
-              <button onClick={() => { if (confirm('End this auction?')) endMutation.mutate(a.id); }}
-                disabled={endMutation.isPending}
-                className="btn-outline flex items-center gap-1.5 text-sm border-red-800 text-red-400 hover:border-red-600">
-                <Square className="w-3.5 h-3.5" /> End Auction
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+      <div className="space-y-3">
+        {auctions.map(a => (
+          <div key={a.id}>
+            <div className="card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={a.status === 'active' ? 'badge-active' : a.status === 'ended' ? 'badge-ended' : 'badge-pending'}>
+                    {a.status}
+                  </span>
+                </div>
+                <h3 className="font-body font-semibold">{a.title}</h3>
+                <p className="text-xs font-body text-auction-muted flex items-center gap-1 mt-0.5">
+                  <Clock className="w-3 h-3" /> {a.duration_minutes} min
+                  {a.ends_at && ` · Ends ${new Date(a.ends_at).toLocaleString()}`}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                {a.status === 'pending' && (
+                  <button onClick={() => startMutation.mutate(a.id)} disabled={startMutation.isPending}
+                    className="btn-gold flex items-center gap-1.5 text-sm">
+                    <Play className="w-3.5 h-3.5" /> Start
+                  </button>
+                )}
+                {a.status === 'active' && (
+                  <>
+                    <button
+                      onClick={() => { setSelectedId(selectedId === a.id ? null : a.id); setLiveBids([]); }}
+                      className="btn-outline text-sm px-3 py-1.5">
+                      {selectedId === a.id ? 'Hide Bids' : 'Live Bids'}
+                    </button>
+                    <button onClick={() => { if (confirm('End this auction?')) endMutation.mutate(a.id); }}
+                      disabled={endMutation.isPending}
+                      className="btn-outline flex items-center gap-1.5 text-sm border-red-800 text-red-400 hover:border-red-600">
+                      <Square className="w-3.5 h-3.5" /> End Auction
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
 
-      {selectedId === a.id && (
-        <div className="card mt-1 p-4 border-auction-gold/30">
-          <p className="text-xs text-auction-muted uppercase tracking-wider mb-2">Live Bid Feed</p>
-          <BidFeed bids={liveBids} />
-        </div>
-      )}
-    </div>
-  ))}
-  {auctions.length === 0 && <p className="text-center text-auction-muted py-8">No auctions yet.</p>}
-   </div>
+            {selectedId === a.id && (
+              <div className="card mt-1 p-4 border-auction-gold/30">
+                <p className="text-xs text-auction-muted uppercase tracking-wider mb-2">Live Bid Feed</p>
+                <BidFeed bids={liveBids} />
+              </div>
+            )}
+          </div>
+        ))}
+        {auctions.length === 0 && <p className="text-center text-auction-muted py-8">No auctions yet.</p>}
+      </div>
 
     </div>
   );

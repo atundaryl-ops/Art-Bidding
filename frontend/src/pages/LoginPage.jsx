@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import { Gavel, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
+import logo from '../assets/creative-block-logo.png';
 
 export default function LoginPage() {
-  const [tab, setTab] = useState('bidder'); // 'bidder' | 'admin'
   const [form, setForm] = useState({ email: '', username: '', password: '' });
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -16,108 +16,100 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      if (tab === 'admin') {
-        await adminLogin(form.username, form.password);
-        navigate('/admin');
-      } else {
-        await login(form.email, form.password);
-        navigate('/auction');
+      const value = form.email || form.username;
+      if (value === 'admin' || !value.includes('@')) {
+        try {
+          await adminLogin(value, form.password);
+          navigate('/admin');
+          return;
+        } catch {
+          // not admin, try bidder
+        }
       }
+      await login(form.email, form.password);
+      navigate('/auction');
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Login failed');
+      toast.error(err.response?.data?.error || 'Invalid credentials');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-sm animate-slide-up">
-        {/* Logo */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-auction-gold/10 border border-auction-gold/30 mb-4">
-            <Gavel className="w-6 h-6 text-auction-gold" />
+    <div className="min-h-screen flex">
+      {/* Left panel */}
+      <div className="hidden lg:flex flex-col items-center justify-center flex-1 bg-auction-gold/10 border-r border-auction-border px-12">
+        <img src={logo} alt="Creative Block" className="w-48 mb-8" />
+        <h1 className="font-display text-4xl text-auction-text text-center leading-tight mb-3">
+          ArtBid
+        </h1>
+        <p className="text-auction-muted text-center text-sm max-w-xs leading-relaxed">
+          A live silent auction platform by Creative Block. Bid on curated artworks in real time.
+        </p>
+      </div>
+
+      {/* Right panel — form */}
+      <div className="flex flex-col items-center justify-center flex-1 px-6 py-12">
+        {/* Mobile logo — only shows on small screens */}
+        <div className="lg:hidden text-center mb-10">
+          <img src={logo} alt="Creative Block" className="h-16 w-auto mx-auto mb-3" />
+          <h1 className="font-display text-2xl text-auction-text">ArtBid</h1>
+          <p className="text-auction-muted text-xs mt-1">by Creative Block</p>
+        </div>
+
+        <div className="w-full max-w-sm animate-slide-up">
+          <div className="mb-8">
+            <h2 className="font-display text-2xl text-auction-text mb-1">Welcome back</h2>
+            <p className="text-auction-muted text-sm">Sign in to your account to continue</p>
           </div>
-          <h1 className="text-3xl font-display text-auction-text">ArtBid</h1>
-          <p className="text-auction-muted text-sm mt-1">Live Auction Platform</p>
-        </div>
 
-        {/* Tabs */}
-        <div className="flex border border-auction-border rounded-lg p-1 mb-6">
-          {['bidder', 'admin'].map(t => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`flex-1 py-2 text-sm font-semibold rounded transition-all capitalize ${
-                tab === t
-                  ? 'bg-auction-gold text-auction-dark'
-                  : 'text-auction-muted hover:text-auction-text'
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {tab === 'bidder' ? (
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="label">Email</label>
-              <input
-                className="input"
-                type="email"
-                placeholder="you@example.com"
-                value={form.email}
-                onChange={e => setForm({ ...form, email: e.target.value })}
-                required
-              />
-            </div>
-          ) : (
-            <div>
-              <label className="label">Username</label>
+              <label className="label">Email or Username</label>
               <input
                 className="input"
                 type="text"
-                placeholder="admin"
-                value={form.username}
-                onChange={e => setForm({ ...form, username: e.target.value })}
+                placeholder="Email or admin username"
+                value={form.email || form.username}
+                onChange={e => setForm({ ...form, email: e.target.value, username: e.target.value })}
                 required
+                autoFocus
               />
             </div>
-          )}
 
-          <div>
-            <label className="label">Password</label>
-            <div className="relative">
-              <input
-                className="input pr-10"
-                type={showPass ? 'text' : 'password'}
-                placeholder="••••••••"
-                value={form.password}
-                onChange={e => setForm({ ...form, password: e.target.value })}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPass(!showPass)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-auction-muted hover:text-auction-text"
-              >
-                {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+            <div>
+              <label className="label">Password</label>
+              <div className="relative">
+                <input
+                  className="input pr-10"
+                  type={showPass ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={e => setForm({ ...form, password: e.target.value })}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-auction-muted hover:text-auction-text transition-colors"
+                >
+                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
-          </div>
 
-          <button type="submit" disabled={loading} className="btn-gold w-full mt-2">
-            {loading ? 'Signing in…' : 'Sign In'}
-          </button>
-        </form>
+            <button type="submit" disabled={loading} className="btn-gold w-full py-3 text-base">
+              {loading ? 'Signing in…' : 'Sign In'}
+            </button>
+          </form>
 
-        {tab === 'bidder' && (
-          <p className="text-center text-sm text-auction-muted mt-6">
+          <p className="text-center text-sm text-auction-muted mt-8">
             No account?{' '}
-            <Link to="/register" className="text-auction-gold hover:underline">Register here</Link>
+            <Link to="/register" className="text-auction-gold font-semibold hover:underline">
+              Register here
+            </Link>
           </p>
-        )}
+        </div>
       </div>
     </div>
   );
