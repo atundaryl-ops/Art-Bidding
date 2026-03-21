@@ -14,43 +14,20 @@ const { setupSocket } = require('./socket/bidding');
 const { getDb } = require('./db/database');
 
 const app = express();
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
 // Socket.io
 const io = new Server(server, {
-  cors: {
-    origin: (origin, callback) => {
-      if (!origin || origin.endsWith('.vercel.app') || origin === 'http://localhost:3000') {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    methods: ['GET', 'POST'],
-    credentials: true
-  },
+  cors: { origin: '*', methods: ['GET', 'POST'] },
   transports: ['polling'],
   allowEIO3: true
 });
-
 // Security middleware
 app.use(helmet());
-app.use(cors({
-  origin: (origin, callback) => {
-    const allowed = [
-      'https://art-bidding-xm4g.vercel.app',
-      'http://localhost:3000'
-    ];
-    if (!origin || allowed.includes(origin) || origin.endsWith('.vercel.app')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
-}));
+app.use(cors({ origin: '*', credentials: false }));
 app.use(express.json({ limit: '10kb' }));
 
 // Rate limiting
