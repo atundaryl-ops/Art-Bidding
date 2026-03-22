@@ -26,7 +26,7 @@ export default function AuctionPage() {
   // Join auction room & listen for events
   useEffect(() => {
     if (!socket || !auction?.id) return;
-
+console.log('Joining auction room:', auction.id);
     socket.emit('join_auction', auction.id);
 
     const onBidAccepted = ({ paintingId, painting, bid }) => {
@@ -78,9 +78,12 @@ export default function AuctionPage() {
   }, [socket, auction?.id, queryClient, user]);
 
   const placeBid = useCallback((paintingId, amount) => {
-    if (!socket || !auction?.id) return;
-    socket.emit('place_bid', { auctionId: auction.id, paintingId, amount });
-  }, [socket, auction?.id]);
+  console.log('placeBid called:', { paintingId, amount, auctionId: auction?.id, socketConnected: socket?.connected });
+  if (!socket) return toast.error('Not connected to server');
+  if (!socket.connected) return toast.error('Connection lost, please wait...');
+  if (!auction?.id) return toast.error('No active auction');
+  socket.emit('place_bid', { auctionId: auction.id, paintingId, amount });
+}, [socket, auction?.id]);
 
   if (isLoading) return (
     <div className="min-h-screen flex items-center justify-center">
