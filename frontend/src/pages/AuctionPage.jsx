@@ -78,10 +78,10 @@ console.log('Joining auction room:', auction.id);
   }, [socket, auction?.id, queryClient, user]);
 
   const placeBid = useCallback((paintingId, amount) => {
-  console.log('placeBid called:', { paintingId, amount, auctionId: auction?.id, socketConnected: socket?.connected });
-  if (!socket) return toast.error('Not connected to server');
-  if (!socket.connected) return toast.error('Connection lost, please wait...');
-  if (!auction?.id) return toast.error('No active auction');
+  if (!socket || !auction?.id) {
+    toast.error('Not connected — please wait');
+    return;
+  }
   socket.emit('place_bid', { auctionId: auction.id, paintingId, amount });
 }, [socket, auction?.id]);
 
