@@ -11,7 +11,7 @@ import CountdownTimer from '../components/CountdownTimer';
 
 
 export default function AuctionPage() {
-  const { socket, connected } = useSocket();
+  const { socketRef } = useSocket();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [recentBids, setRecentBids] = useState([]);
