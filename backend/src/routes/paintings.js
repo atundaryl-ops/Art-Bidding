@@ -1,112 +1,103 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { v4: uuidv4 } = require('uuid');
-const { getDb } = require('../db/database');
+const { pool } = require('../db/database');
 const { requireAdmin, requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Get all paintings (authenticated)
-router.get('/', requireAuth, (req, res) => {
-  const db = getDb();
-  const paintings = db.prepare(`
-    SELECT p.*, b.name as winner_name, b.bidder_number as winner_number
-    FROM paintings p
-    LEFT JOIN bidders b ON b.id = p.current_winner_id
-    ORDER BY p.created_at
-  `).all();
-  res.json(paintings);
+router.get('/', requireAuth, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT p.*, b.name as winner_name, b.bidder_number as winner_number
+      FROM paintings p
+      LEFT JOIN bidders b ON b.id = p.current_winner_id
+      ORDER BY p.created_at
+    `);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// Get single painting
-router.get('/:id', requireAuth, (req, res) => {
-  const db = getDb();
-  const painting = db.prepare(`
-    SELECT p.*, b.name as winner_name, b.bidder_number as winner_number
-    FROM paintings p
-    LEFT JOIN bidders b ON b.id = p.current_winner_id
-    WHERE p.id = ?
-  `).get(req.params.id);
-  if (!painting) return res.status(404).json({ error: 'Painting not found' });
-  res.json(painting);
+router.get('/:id', requireAuth, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT p.*, b.name as winner_name, b.bidder_number as winner_number
+      FROM paintings p
+      LEFT JOIN bidders b ON b.id = p.current_winner_id
+      WHERE p.id = $1
+    `, [req.params.id]);
+    if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    res.json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// Create painting (admin)
-router.post('/',
-  requireAdmin,
+router.post('/', requireAdmin,
   body('title').trim().notEmpty(),
   body('artist').trim().notEmpty(),
   body('starting_bid').isFloat({ min: 0 }),
   body('bid_increment').optional().isFloat({ min: 1 }),
-  (req, res) => {
+  async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-
     const { title, artist, description, image_url, starting_bid, bid_increment } = req.body;
-    const db = getDb();
-    const id = uuidv4();
-
-    db.prepare(`
-      INSERT INTO paintings (id, title, artist, description, image_url, starting_bid, bid_increment)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(id, title, artist, description || null, image_url || null, starting_bid, bid_increment || 50);
-
-    const painting = db.prepare('SELECT * FROM paintings WHERE id = ?').get(id);
-    res.status(201).json(painting);
+    try {
+      const id = uuidv4();
+      await pool.query(
+        `INSERT INTO paintings (id, title, artist, description, image_url, starting_bid, bid_increment)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [id, title, artist, description || null, image_url || null, starting_bid, bid_increment || 50]
+      );
+      const result = await pool.query('SELECT * FROM paintings WHERE id = $1', [id]);
+      res.status(201).json(result.rows[0]);
+    } catch (err) { res.status(500).json({ error: 'Failed to create painting' }); }
   }
 );
 
-// Update painting (admin)
-router.put('/:id',
-  requireAdmin,
+router.put('/:id', requireAdmin,
   body('title').optional().trim().notEmpty(),
   body('artist').optional().trim().notEmpty(),
   body('starting_bid').optional().isFloat({ min: 0 }),
   body('bid_increment').optional().isFloat({ min: 1 }),
-  (req, res) => {
+  async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-
-    const db = getDb();
-    const painting = db.prepare('SELECT * FROM paintings WHERE id = ?').get(req.params.id);
-    if (!painting) return res.status(404).json({ error: 'Painting not found' });
-
     const { title, artist, description, image_url, starting_bid, bid_increment } = req.body;
-
-    db.prepare(`
-      UPDATE paintings SET
-        title = COALESCE(?, title),
-        artist = COALESCE(?, artist),
-        description = COALESCE(?, description),
-        image_url = COALESCE(?, image_url),
-        starting_bid = COALESCE(?, starting_bid),
-        bid_increment = COALESCE(?, bid_increment)
-      WHERE id = ?
-    `).run(title, artist, description, image_url, starting_bid, bid_increment, req.params.id);
-
-    res.json(db.prepare('SELECT * FROM paintings WHERE id = ?').get(req.params.id));
+    try {
+      await pool.query(`
+        UPDATE paintings SET
+          title = COALESCE($1, title),
+          artist = COALESCE($2, artist),
+          description = COALESCE($3, description),
+          image_url = COALESCE($4, image_url),
+          starting_bid = COALESCE($5, starting_bid),
+          bid_increment = COALESCE($6, bid_increment)
+        WHERE id = $7
+      `, [title, artist, description, image_url, starting_bid, bid_increment, req.params.id]);
+      const result = await pool.query('SELECT * FROM paintings WHERE id = $1', [req.params.id]);
+      res.json(result.rows[0]);
+    } catch (err) { res.status(500).json({ error: 'Failed to update' }); }
   }
 );
 
-// Delete painting (admin)
-router.delete('/:id', requireAdmin, (req, res) => {
-  const db = getDb();
-  const result = db.prepare('DELETE FROM paintings WHERE id = ?').run(req.params.id);
-  if (result.changes === 0) return res.status(404).json({ error: 'Painting not found' });
-  res.json({ success: true });
+router.delete('/:id', requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM paintings WHERE id = $1', [req.params.id]);
+    if (!result.rowCount) return res.status(404).json({ error: 'Not found' });
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: 'Cannot delete painting in use' }); }
 });
 
-// Get bid history for a painting
-router.get('/:id/bids', requireAuth, (req, res) => {
-  const db = getDb();
-  const bids = db.prepare(`
-    SELECT bids.*, b.name as bidder_name, b.bidder_number
-    FROM bids
-    JOIN bidders b ON b.id = bids.bidder_id
-    WHERE bids.painting_id = ?
-    ORDER BY bids.placed_at DESC
-  `).all(req.params.id);
-  res.json(bids);
+router.get('/:id/bids', requireAuth, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT bids.*, b.name as bidder_name, b.bidder_number
+      FROM bids
+      JOIN bidders b ON b.id = bids.bidder_id
+      WHERE bids.painting_id = $1
+      ORDER BY bids.placed_at DESC
+    `, [req.params.id]);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: 'Failed' }); }
 });
 
 module.exports = router;

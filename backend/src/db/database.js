@@ -1,27 +1,21 @@
-const path          = require('path');
-const SqliteWrapper = require('./sqlite-wrapper');
+const { Pool } = require('pg');
 
-const DB_PATH = path.join(__dirname, '../../auction.db');
-let db;
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
-function getDb() {
-  if (!db) {
-    db = new SqliteWrapper(DB_PATH);
-    initSchema();
-  }
-  return db;
-}
-
-function initSchema() {
-  db.exec(`
+async function initSchema() {
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS bidders (
       id              TEXT PRIMARY KEY,
       name            TEXT NOT NULL,
       email           TEXT UNIQUE NOT NULL,
       phone           TEXT,
       bidder_number   TEXT UNIQUE NOT NULL,
+      alias           TEXT,
       password_hash   TEXT NOT NULL,
-      created_at      DATETIME DEFAULT (datetime('now'))
+      created_at      TIMESTAMP DEFAULT NOW()
     );
     CREATE TABLE IF NOT EXISTS paintings (
       id                TEXT PRIMARY KEY,
@@ -35,7 +29,7 @@ function initSchema() {
       current_winner_id TEXT REFERENCES bidders(id),
       status            TEXT DEFAULT 'pending'
                           CHECK(status IN ('pending','active','sold','unsold')),
-      created_at        DATETIME DEFAULT (datetime('now'))
+      created_at        TIMESTAMP DEFAULT NOW()
     );
     CREATE TABLE IF NOT EXISTS auctions (
       id               TEXT PRIMARY KEY,
@@ -43,9 +37,9 @@ function initSchema() {
       duration_minutes INTEGER NOT NULL DEFAULT 60,
       status           TEXT DEFAULT 'pending'
                          CHECK(status IN ('pending','active','ended')),
-      started_at       DATETIME,
-      ends_at          DATETIME,
-      created_at       DATETIME DEFAULT (datetime('now'))
+      started_at       TIMESTAMP,
+      ends_at          TIMESTAMP,
+      created_at       TIMESTAMP DEFAULT NOW()
     );
     CREATE TABLE IF NOT EXISTS bids (
       id          TEXT PRIMARY KEY,
@@ -53,7 +47,7 @@ function initSchema() {
       painting_id TEXT NOT NULL REFERENCES paintings(id),
       bidder_id   TEXT NOT NULL REFERENCES bidders(id),
       amount      REAL NOT NULL,
-      placed_at   DATETIME DEFAULT (datetime('now'))
+      placed_at   TIMESTAMP DEFAULT NOW()
     );
     CREATE TABLE IF NOT EXISTS auction_paintings (
       auction_id  TEXT NOT NULL REFERENCES auctions(id),
@@ -61,6 +55,7 @@ function initSchema() {
       PRIMARY KEY (auction_id, painting_id)
     );
   `);
+  console.log('✅ Database schema ready');
 }
 
-module.exports = { getDb };
+module.exports = { pool, initSchema };
