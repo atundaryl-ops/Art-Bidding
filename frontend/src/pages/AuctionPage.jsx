@@ -11,7 +11,7 @@ import CountdownTimer from '../components/CountdownTimer';
 
 
 export default function AuctionPage() {
-  const { socket } = useSocket();
+  const { socket, connected } = useSocket();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [recentBids, setRecentBids] = useState([]);
@@ -25,65 +25,68 @@ export default function AuctionPage() {
 
   // Join auction room & listen for events
   useEffect(() => {
-    if (!socket || !auction?.id) return;
-console.log('Joining auction room:', auction.id);
-    socket.emit('join_auction', auction.id);
+  const socket = socketRef?.current;
+  if (!socket || !auction?.id) return;
 
-    const onBidAccepted = ({ paintingId, painting, bid }) => {
-      // Update paintings in query cache
-      queryClient.setQueryData(['active-auction'], old => {
-        if (!old) return old;
-        return {
-          ...old,
-          paintings: old.paintings.map(p =>
-            p.id === paintingId ? { ...p, ...painting } : p
-          )
-        };
+  console.log('Joining auction room:', auction.id);
+  socket.emit('join_auction', auction.id);
+
+  const onBidAccepted = ({ paintingId, painting, bid }) => {
+    queryClient.setQueryData(['active-auction'], old => {
+      if (!old) return old;
+      return {
+        ...old,
+        paintings: old.paintings.map(p =>
+          p.id === paintingId ? { ...p, ...painting } : p
+        )
+      };
+    });
+
+    setRecentBids(prev => [{
+      ...bid,
+      paintingTitle: painting.title
+    }, ...prev].slice(0, 30));
+
+    if (bid.bidderNumber === user?.bidderNumber) {
+      toast.success(`Bid placed! ₱${bid.amount.toLocaleString()} on "${painting.title}"`);
+    } else {
+      toast(`#${bid.bidderNumber} bid ₱${bid.amount.toLocaleString()} on "${painting.title}"`, {
+        icon: '🎨',
+        style: { background: '#221F18', color: '#F0EAD6', border: '1px solid #2E2A21' }
       });
+    }
+  };
 
-      setRecentBids(prev => [{
-        ...bid,
-        paintingTitle: painting.title
-      }, ...prev].slice(0, 30));
+  const onAuctionStatus = ({ status }) => {
+    setAuctionStatus(status);
+    if (status === 'ended') {
+      toast('Auction has ended!', { icon: '🔨', duration: 5000 });
+      queryClient.invalidateQueries(['active-auction']);
+    }
+  };
 
-      if (bid.bidderNumber === user?.bidderNumber) {
-        toast.success(`Bid placed! ₱${bid.amount.toLocaleString()} on "${painting.title}"`);
-      } else {
-        toast(`#${bid.bidderNumber} bid ₱${bid.amount.toLocaleString()} on "${painting.title}"`, {
-          icon: '🎨',
-          style: { background: '#221F18', color: '#F0EAD6', border: '1px solid #2E2A21' }
-        });
-      }
-    };
+  const onBidError = ({ message }) => toast.error(message);
 
-    const onAuctionStatus = ({ status }) => {
-      setAuctionStatus(status);
-      if (status === 'ended') {
-        toast('Auction has ended!', { icon: '🔨', duration: 5000 });
-        queryClient.invalidateQueries(['active-auction']);
-      }
-    };
+  socket.on('bid_accepted', onBidAccepted);
+  socket.on('auction_status', onAuctionStatus);
+  socket.on('bid_error', onBidError);
 
-    const onBidError = ({ message }) => toast.error(message);
+  return () => {
+    socket.off('bid_accepted', onBidAccepted);
+    socket.off('auction_status', onAuctionStatus);
+    socket.off('bid_error', onBidError);
+  };
+}, [socketRef, auction?.id, queryClient, user]);
 
-    socket.on('bid_accepted', onBidAccepted);
-    socket.on('auction_status', onAuctionStatus);
-    socket.on('bid_error', onBidError);
-
-    return () => {
-      socket.off('bid_accepted', onBidAccepted);
-      socket.off('auction_status', onAuctionStatus);
-      socket.off('bid_error', onBidError);
-    };
-  }, [socket, auction?.id, queryClient, user]);
 
   const placeBid = useCallback((paintingId, amount) => {
-  if (!socket || !auction?.id) {
-    toast.error('Not connected — please wait');
-    return;
-  }
-  socket.emit('place_bid', { auctionId: auction.id, paintingId, amount });
-}, [socket, auction?.id]);
+    const socket = socketRef?.current;
+    if (!socket?.connected) {
+      toast.error('Not connected — please wait');
+      return;
+    }
+    socket.emit('place_bid', { auctionId: auction.id, paintingId, amount });
+  }, [socketRef, auction?.id]);
 
   if (isLoading) return (
     <div className="min-h-screen flex items-center justify-center">

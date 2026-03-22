@@ -57,7 +57,7 @@ export function SocketProvider({ children }) {
   }, [user]);
 
   return (
-    <SocketContext.Provider value={{ socket: socketRef.current, connected }}>
+    <SocketContext.Provider value={{ socket: socketRef.current, connected, socketRef }}>
       {children}
     </SocketContext.Provider>
   );
