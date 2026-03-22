@@ -26,7 +26,7 @@ export default function LoginPage() {
           // not admin, try bidder
         }
       }
-      await login(form.email, form.password);
+      await login(form.email || form.username, form.password);
       navigate('/auction');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Invalid credentials');

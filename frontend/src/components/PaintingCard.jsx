@@ -59,10 +59,10 @@ export default function PaintingCard({ painting, onBid, auctionActive }) {
         <div className="flex items-end justify-between">
           <div>
             <p className="text-xs text-auction-muted uppercase tracking-wider">
-              {painting.current_bid ? 'Bids Placed' : 'Starting Bid'}
+              {painting.current_bid ? 'Current Bid' : 'Starting Bid'}
             </p>
             <p className="font-mono text-xl font-semibold text-auction-gold">
-              {painting.current_bid ? '••••••' : `₱${currentBid.toLocaleString()}`}
+              ₱{currentBid.toLocaleString()}
             </p>
           </div>
           <div className="text-right">

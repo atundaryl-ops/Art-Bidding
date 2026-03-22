@@ -9,12 +9,12 @@ export function AuthProvider({ children }) {
   });
 
   const login = useCallback(async (email, password) => {
-    const { data } = await api.post('/auth/login', { email, password });
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data));
-    setUser(data);
-    return data;
-  }, []);
+  const { data } = await api.post('/auth/login', { email, password });
+  localStorage.setItem('token', data.token);
+  localStorage.setItem('user', JSON.stringify(data));
+  setUser(data);
+  return data;
+}, []);
 
   const adminLogin = useCallback(async (username, password) => {
     const { data } = await api.post('/auth/admin/login', { username, password });
