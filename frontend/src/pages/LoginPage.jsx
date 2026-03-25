@@ -51,10 +51,10 @@ export default function LoginPage() {
       {/* Right panel — form */}
       <div className="flex flex-col items-center justify-center flex-1 px-6 py-12 bg-[#2E6BC4]">
         {/* Mobile logo — only shows on small screens */}
-        <div className="lg:hidden text-center mb-10 bg-white">
-          <img src={logo} alt="Creative Block" className="h-16 w-auto mx-auto mb-3" />
+        <div className="lg:hidden text-center mb-10">
+          <img src={logo} alt="Creative Block" className="h-16 w-auto mx-auto mb-3 bg-white" />
           <h1 className="font-display text-2xl text-auction-text">ArtBid</h1>
-          <p className="text-auction-muted text-xs mt-1">by Creative Block</p>
+          <p className="text-auction-muted text-xs mt-1 text-white">by Creative Block</p>
         </div>
 
         <div className="w-full max-w-sm animate-slide-up">
