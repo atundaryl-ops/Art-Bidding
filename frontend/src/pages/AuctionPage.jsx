@@ -14,7 +14,7 @@ export default function AuctionPage() {
   const { socketRef } = useSocket();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [recentBids, setRecentBids] = useState([]);
+
   const [auctionStatus, setAuctionStatus] = useState(null);
 
   const { data: auction, isLoading } = useQuery({
@@ -23,60 +23,92 @@ export default function AuctionPage() {
     refetchInterval: 30000,
   });
 
+  const [recentBids, setRecentBids] = useState([]);
+
+  // Add this useEffect to populate on load:
+  useEffect(() => {
+    if (initialBids.length > 0) {
+      setRecentBids(initialBids);
+    }
+  }, [initialBids]);
+  1
   // Join auction room & listen for events
   useEffect(() => {
-  const socket = socketRef?.current;
-  if (!socket || !auction?.id) return;
+    const socket = socketRef?.current;
+    if (!socket || !auction?.id) return;
 
-  console.log('Joining auction room:', auction.id);
-  socket.emit('join_auction', auction.id);
+    console.log('Joining auction room:', auction.id);
+    socket.emit('join_auction', auction.id);
 
-  const onBidAccepted = ({ paintingId, painting, bid }) => {
-    queryClient.setQueryData(['active-auction'], old => {
-      if (!old) return old;
-      return {
-        ...old,
-        paintings: old.paintings.map(p =>
-          p.id === paintingId ? { ...p, ...painting } : p
-        )
-      };
-    });
-
-    setRecentBids(prev => [{
-      ...bid,
-      paintingTitle: painting.title
-    }, ...prev].slice(0, 30));
-
-    if (bid.bidderNumber === user?.bidderNumber) {
-      toast.success(`Bid placed! ₱${bid.amount.toLocaleString()} on "${painting.title}"`);
-    } else {
-      toast(`#${bid.bidderNumber} bid ₱${bid.amount.toLocaleString()} on "${painting.title}"`, {
-        icon: '🎨',
-        style: { background: '#221F18', color: '#F0EAD6', border: '1px solid #2E2A21' }
+    const onBidAccepted = ({ paintingId, painting, bid }) => {
+      queryClient.setQueryData(['active-auction'], old => {
+        if (!old) return old;
+        return {
+          ...old,
+          paintings: old.paintings.map(p =>
+            p.id === paintingId ? { ...p, ...painting } : p
+          )
+        };
       });
-    }
-  };
 
-  const onAuctionStatus = ({ status }) => {
-    setAuctionStatus(status);
-    if (status === 'ended') {
-      toast('Auction has ended!', { icon: '🔨', duration: 5000 });
-      queryClient.invalidateQueries(['active-auction']);
-    }
-  };
+      const { data: initialBids = [] } = useQuery({
+        queryKey: ['recent-bids', auction?.id],
+        queryFn: async () => {
+          if (!auction?.id) return [];
+          const paintings = auction.paintings || [];
+          const allBids = [];
+          for (const p of paintings) {
+            const res = await api.get(`/paintings/${p.id}/bids`);
+            const bids = res.data.slice(0, 5).map(b => ({
+              id: b.id,
+              amount: b.amount,
+              bidderName: b.bidder_name,
+              bidderNumber: b.bidder_number,
+              paintingTitle: p.title,
+              placedAt: b.placed_at
+            }));
+            allBids.push(...bids);
+          }
+          return allBids.sort((a, b) => new Date(b.placedAt) - new Date(a.placedAt)).slice(0, 30);
+        },
+        enabled: !!auction?.id,
+      });
 
-  const onBidError = ({ message }) => toast.error(message);
+      setRecentBids(prev => [{
+        ...bid,
+        paintingTitle: painting.title
+      }, ...prev].slice(0, 30));
 
-  socket.on('bid_accepted', onBidAccepted);
-  socket.on('auction_status', onAuctionStatus);
-  socket.on('bid_error', onBidError);
+      if (bid.bidderNumber === user?.bidderNumber) {
+        toast.success(`Bid placed! ₱${bid.amount.toLocaleString()} on "${painting.title}"`);
+      } else {
+        toast(`#${bid.bidderNumber} bid ₱${bid.amount.toLocaleString()} on "${painting.title}"`, {
+          icon: '🎨',
+          style: { background: '#221F18', color: '#F0EAD6', border: '1px solid #2E2A21' }
+        });
+      }
+    };
 
-  return () => {
-    socket.off('bid_accepted', onBidAccepted);
-    socket.off('auction_status', onAuctionStatus);
-    socket.off('bid_error', onBidError);
-  };
-}, [socketRef, auction?.id, queryClient, user]);
+    const onAuctionStatus = ({ status }) => {
+      setAuctionStatus(status);
+      if (status === 'ended') {
+        toast('Auction has ended!', { icon: '🔨', duration: 5000 });
+        queryClient.invalidateQueries(['active-auction']);
+      }
+    };
+
+    const onBidError = ({ message }) => toast.error(message);
+
+    socket.on('bid_accepted', onBidAccepted);
+    socket.on('auction_status', onAuctionStatus);
+    socket.on('bid_error', onBidError);
+
+    return () => {
+      socket.off('bid_accepted', onBidAccepted);
+      socket.off('auction_status', onAuctionStatus);
+      socket.off('bid_error', onBidError);
+    };
+  }, [socketRef, auction?.id, queryClient, user]);
 
 
   const placeBid = useCallback((paintingId, amount) => {
