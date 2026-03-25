@@ -49,7 +49,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right panel — form */}
-      <div className="flex flex-col items-center justify-center flex-1 px-6 py-12 bg-[#2E6BC4]">
+      <div className="flex flex-col items-center justify-center flex-1 px-6 py-12 bg-[#3D8EE8]">
         {/* Mobile logo — only shows on small screens */}
         <div className="lg:hidden text-center mb-10">
           <img src={logo} alt="Creative Block" className="h-16 w-auto mx-auto mb-3" />
@@ -105,7 +105,7 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-auction-muted mt-8 text-white">
             No account?{' '}
-            <Link to="/register" className="text-auction-gold font-semibold hover:underline">
+            <Link to="/register" className="text-black font-semibold hover:underline">
               Register here
             </Link>
           </p>
