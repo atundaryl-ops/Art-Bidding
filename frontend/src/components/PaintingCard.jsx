@@ -1,4 +1,4 @@
-import { useState } from 'react';
+
 import { TrendingUp, Clock, Trophy, Paintbrush } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -6,8 +6,7 @@ const PLACEHOLDER = 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a
 
 export default function PaintingCard({ painting, onBid, auctionActive }) {
   const { user } = useAuth();
-  const [bidAmount, setBidAmount] = useState('');
-  const [showBid, setShowBid] = useState(false);
+  
 
   const currentBid = painting.current_bid || painting.starting_bid;
   const minBid = painting.current_bid
@@ -74,36 +73,14 @@ export default function PaintingCard({ painting, onBid, auctionActive }) {
         {/* Bid input */}
         {auctionActive && !isSold && (
           <div className="pt-1">
-            {showBid ? (
-              <div className="flex gap-2">
-                <input
-                  className="input text-sm py-2"
-                  type="number"
-                  min={minBid}
-                  step={painting.bid_increment}
-                  placeholder={`Min ₱${minBid.toLocaleString()}`}
-                  value={bidAmount}
-                  onChange={e => setBidAmount(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleBid()}
-                  autoFocus
-                />
-                <button onClick={handleBid} className="btn-gold text-sm px-4 py-2 whitespace-nowrap">
-                  Place
-                </button>
-                <button onClick={() => setShowBid(false)} className="btn-outline text-sm px-3 py-2">
-                  ✕
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => { setShowBid(true); setBidAmount(String(minBid)); }}
-                disabled={isWinning}
-                className="btn-gold w-full flex items-center justify-center gap-2 text-sm"
-              >
-                <TrendingUp className="w-4 h-4" />
-                {isWinning ? 'You\'re Winning!' : `Bid ₱${minBid.toLocaleString()}`}
-              </button>
-            )}
+            <button
+              onClick={() => onBid(painting.id, minBid)}
+              disabled={isWinning}
+              className="btn-gold w-full flex items-center justify-center gap-2 text-sm"
+            >
+              <TrendingUp className="w-4 h-4" />
+              {isWinning ? 'You\'re Winning!' : `Bid ₱${minBid.toLocaleString()}`}
+            </button>
           </div>
         )}
       </div>

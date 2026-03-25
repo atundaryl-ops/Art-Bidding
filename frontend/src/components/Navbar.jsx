@@ -1,7 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
-import { Gavel, LogOut, Wifi, WifiOff } from 'lucide-react';
+import { LogOut, Wifi, WifiOff } from 'lucide-react';
+import logo from '../assets/creative-block-logo.png';
 
 export default function Navbar() {
   const { user, logout, isAdmin } = useAuth();
@@ -14,8 +15,7 @@ export default function Navbar() {
     <header className="border-b border-auction-border bg-auction-surface/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link to={isAdmin ? '/admin' : '/auction'} className="flex items-center gap-2.5">
-          <Gavel className="w-5 h-5 text-auction-gold" />
-          <span className="font-display text-lg">ArtBid</span>
+          <img src={logo} alt="ArtBid" className="h-8 w-auto" />
           {isAdmin && <span className="text-xs bg-auction-gold/20 text-auction-gold px-2 py-0.5 rounded-full font-semibold">Admin</span>}
         </Link>
 

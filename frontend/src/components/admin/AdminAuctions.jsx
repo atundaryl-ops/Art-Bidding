@@ -7,7 +7,7 @@ import { useSocket } from '../../context/SocketContext';
 import BidFeed from '../BidFeed';
 
 export default function AdminAuctions() {
-  const { socket } = useSocket();
+  const { socketRef } = useSocket();
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ title: '', duration_minutes: 60, painting_ids: [] });
@@ -34,7 +34,7 @@ export default function AdminAuctions() {
     onSuccess: (res) => {
       qc.invalidateQueries(['auctions']);
       toast.success('Auction started!');
-      socket?.emit('auction_started', res.data.id);
+      socketRef?.emit('auction_started', res.data.id);
     },
     onError: err => toast.error(err.response?.data?.error || 'Failed'),
   });
@@ -44,23 +44,25 @@ export default function AdminAuctions() {
     onSuccess: (_, id) => {
       qc.invalidateQueries(['auctions']);
       toast.success('Auction ended');
-      socket?.emit('auction_ended', id);
+      socketRef?.emit('auction_ended', id);
     },
     onError: err => toast.error(err.response?.data?.error || 'Failed'),
   });
 
   useEffect(() => {
-    if (!socket || !selectedId) return;
-    socket.emit('join_auction', selectedId);
+    if (!selectedId) return;
+    const s = socketRef?.current;
+    if (!s) return;
+    s.emit('join_auction', selectedId);
     const onBid = ({ painting, bid }) => {
       setLiveBids(prev => [{
         ...bid,
         paintingTitle: painting.title
       }, ...prev].slice(0, 50));
     };
-    socket.on('bid_accepted', onBid);
-    return () => socket.off('bid_accepted', onBid);
-  }, [socket, selectedId]);
+    s.on('bid_accepted', onBid);
+    return () => s.off('bid_accepted', onBid);
+  }, [socketRef, selectedId]);
 
   const togglePainting = (id) => {
     setForm(f => ({
