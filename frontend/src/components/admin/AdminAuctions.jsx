@@ -14,6 +14,38 @@ export default function AdminAuctions() {
   const [liveBids, setLiveBids] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
 
+  const { data: existingBids = [] } = useQuery({
+    queryKey: ['auction-bids', selectedId],
+    queryFn: async () => {
+      if (!selectedId) return [];
+      const auction = auctions.find(a => a.id === selectedId);
+      if (!auction) return [];
+      const paintingsRes = await api.get(`/auctions/${selectedId}`);
+      const paintings = paintingsRes.data.paintings || [];
+      const allBids = [];
+      for (const p of paintings) {
+        const res = await api.get(`/paintings/${p.id}/bids`);
+        const bids = res.data.map(b => ({
+          id: b.id,
+          amount: b.amount,
+          bidderName: b.bidder_name,
+          bidderNumber: b.bidder_number,
+          paintingTitle: p.title,
+          placedAt: b.placed_at
+        }));
+        allBids.push(...bids);
+      }
+      return allBids.sort((a, b) => new Date(b.placedAt) - new Date(a.placedAt)).slice(0, 50);
+    },
+    enabled: !!selectedId,
+  });
+  
+  useEffect(() => {
+    if (existingBids.length > 0) {
+      setLiveBids(existingBids);
+    }
+  }, [existingBids]);
+
   const { data: auctions = [] } = useQuery({
     queryKey: ['auctions'],
     queryFn: () => api.get('/auctions').then(r => r.data),
@@ -151,7 +183,7 @@ export default function AdminAuctions() {
                 {a.status === 'active' && (
                   <>
                     <button
-                      onClick={() => { setSelectedId(selectedId === a.id ? null : a.id); setLiveBids([]); }}
+                      onClick={() => { setSelectedId(selectedId === a.id ? null : a.id); }}
                       className="btn-outline text-sm px-3 py-1.5">
                       {selectedId === a.id ? 'Hide Bids' : 'Live Bids'}
                     </button>
