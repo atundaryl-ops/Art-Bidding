@@ -25,13 +25,13 @@ export default function AuctionPage() {
 
   const [recentBids, setRecentBids] = useState([]);
 
-  // Add this useEffect to populate on load:
-  useEffect(() => {
-    if (initialBids.length > 0) {
-      setRecentBids(initialBids);
-    }
-  }, [initialBids]);
-  1
+  // // Add this useEffect to populate on load:
+  // useEffect(() => {
+  //   if (initialBids.length > 0) {
+  //     setRecentBids(initialBids);
+  //   }
+  // }, [initialBids]);
+  // 1
   // Join auction room & listen for events
   useEffect(() => {
     const socket = socketRef?.current;
@@ -51,28 +51,28 @@ export default function AuctionPage() {
         };
       });
 
-      const { data: initialBids = [] } = useQuery({
-        queryKey: ['recent-bids', auction?.id],
-        queryFn: async () => {
-          if (!auction?.id) return [];
-          const paintings = auction.paintings || [];
-          const allBids = [];
-          for (const p of paintings) {
-            const res = await api.get(`/paintings/${p.id}/bids`);
-            const bids = res.data.slice(0, 5).map(b => ({
-              id: b.id,
-              amount: b.amount,
-              bidderName: b.bidder_name,
-              bidderNumber: b.bidder_number,
-              paintingTitle: p.title,
-              placedAt: b.placed_at
-            }));
-            allBids.push(...bids);
-          }
-          return allBids.sort((a, b) => new Date(b.placedAt) - new Date(a.placedAt)).slice(0, 30);
-        },
-        enabled: !!auction?.id,
-      });
+      // const { data: initialBids = [] } = useQuery({
+      //   queryKey: ['recent-bids', auction?.id],
+      //   queryFn: async () => {
+      //     if (!auction?.id) return [];
+      //     const paintings = auction.paintings || [];
+      //     const allBids = [];
+      //     for (const p of paintings) {
+      //       const res = await api.get(`/paintings/${p.id}/bids`);
+      //       const bids = res.data.slice(0, 5).map(b => ({
+      //         id: b.id,
+      //         amount: b.amount,
+      //         bidderName: b.bidder_name,
+      //         bidderNumber: b.bidder_number,
+      //         paintingTitle: p.title,
+      //         placedAt: b.placed_at
+      //       }));
+      //       allBids.push(...bids);
+      //     }
+      //     return allBids.sort((a, b) => new Date(b.placedAt) - new Date(a.placedAt)).slice(0, 30);
+      //   },
+      //   enabled: !!auction?.id,
+      // });
 
       setRecentBids(prev => [{
         ...bid,
